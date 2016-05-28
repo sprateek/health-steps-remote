@@ -1,78 +1,142 @@
 #include "main_window.h"
 
-static Window *s_window;
-static TextLayer *s_time_layer, *s_update_layer, *s_steps_layer;
+#define MAX_METRICS HealthMetricActiveKCalories
 
-static TextLayer* make_text_layer(GRect bounds, GFont font) {
-  TextLayer *this = text_layer_create(bounds);
-  text_layer_set_background_color(this, GColorClear);
+static Window *s_window;
+static TextLayer *s_value_layer, *s_label_layer;
+
+static HealthMetric s_metric;
+static GBitmapSequence *s_sequence;
+static GBitmap *s_bitmap;
+static BitmapLayer *s_bitmap_layer;
+
+static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+  s_metric -= (s_metric > 0) ? 1 : -(MAX_METRICS);
+  main_window_update_ui();
+}
+
+static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
+  s_metric += (s_metric < MAX_METRICS) ? 1 : -(MAX_METRICS);
+  main_window_update_ui();
+}
+
+static void click_config_provider(void *context) {
+  window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
+  window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
+}
+
+static TextLayer* make_text_layer(int y_inset, char *font_key) {
+  Layer *window_layer = window_get_root_layer(s_window);
+  GRect bounds = layer_get_bounds(window_layer);
+
+  TextLayer *this = text_layer_create(grect_inset(bounds,
+                                                GEdgeInsets(y_inset, 0, 0, 0)));
   text_layer_set_text_alignment(this, GTextAlignmentCenter);
-  text_layer_set_font(this, font);
+  text_layer_set_text_color(this, GColorWhite);
+  text_layer_set_background_color(this, GColorClear);
+  text_layer_set_font(this, fonts_get_system_font(font_key));
+
+#if defined(PBL_ROUND)
+  text_layer_enable_screen_text_flow_and_paging(this, 5);
+#endif
+
   return this;
 }
 
 static void window_load(Window *window) {
-  Layer *root_layer = window_get_root_layer(window);
-  GRect bounds = layer_get_bounds(root_layer);
+  Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_bounds(window_layer);
+  // Create sequence
+//   s_sequence = gbitmap_sequence_create_with_resource(RESOURCE_ID_SLOTH_ANIMATE);
+  // Create blank GBitmap using APNG frame size
+//   GSize frame_size = gbitmap_sequence_get_bitmap_size(s_sequence);
+//   s_bitmap = gbitmap_create_blank(frame_size, GBitmapFormat8Bit);
+  s_bitmap = gbitmap_create_with_resource(RESOURCE_ID_SLOTH_PNG);
+  s_bitmap_layer = bitmap_layer_create(bounds);
+  bitmap_layer_set_compositing_mode(s_bitmap_layer, GCompOpSet);
+  bitmap_layer_set_bitmap(s_bitmap_layer, s_bitmap);
 
-  s_time_layer = make_text_layer(grect_inset(bounds, GEdgeInsets(40, 5)),
-                     fonts_get_system_font(FONT_KEY_BITHAM_42_MEDIUM_NUMBERS));
-  layer_add_child(root_layer, text_layer_get_layer(s_time_layer));
+  s_value_layer = make_text_layer(50, FONT_KEY_GOTHIC_28_BOLD);
+  s_label_layer = make_text_layer(80, FONT_KEY_GOTHIC_24_BOLD);
+  layer_add_child(window_layer, bitmap_layer_get_layer(s_bitmap_layer));
+//   layer_add_child(window_layer, text_layer_get_layer(s_value_layer));
+//   layer_add_child(window_layer, text_layer_get_layer(s_label_layer));
 
-  s_update_layer = make_text_layer(grect_inset(bounds, GEdgeInsets(105, 5, 0, 5)),
-                     fonts_get_system_font(FONT_KEY_GOTHIC_24));
-  text_layer_set_text(s_update_layer, "Not yet updated");
-  layer_add_child(root_layer, text_layer_get_layer(s_update_layer));
-
-  s_steps_layer = make_text_layer(grect_inset(bounds, 
-                                              GEdgeInsets(87, 5, 0, 5)),
-                                  fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
-  text_layer_set_text(s_update_layer, "No data yet");
-  layer_add_child(root_layer, text_layer_get_layer(s_steps_layer));
 }
 
 static void window_unload(Window *window) {
-  text_layer_destroy(s_time_layer);
-  text_layer_destroy(s_update_layer);
-  text_layer_destroy(s_steps_layer);
-
+  text_layer_destroy(s_value_layer);
+  text_layer_destroy(s_label_layer);
+  gbitmap_destroy(s_bitmap);
+  bitmap_layer_destroy(s_bitmap_layer);
   window_destroy(s_window);
+  s_window = NULL;
 }
 
 void main_window_push() {
-  s_window = window_create();
-  window_set_window_handlers(s_window, (WindowHandlers) {
-    .load = window_load,
-    .unload = window_unload,
-  });
+  if(!s_window) {
+    s_window = window_create();
+    window_set_click_config_provider(s_window, click_config_provider);
+    window_set_window_handlers(s_window, (WindowHandlers) {
+      .load = window_load,
+      .unload = window_unload,
+    });
+  }
   window_stack_push(s_window, true);
 
-  // Show last updated time
-  if(persist_exists(PersistKeyLastUploadTime)) {
-    main_window_set_updated_time(data_get_last_upload_time());
+  main_window_update_ui();
+}
+
+static void set_ui_values(char *label_text, GColor bg_color) {
+  text_layer_set_text(s_label_layer, label_text);
+  window_set_background_color(s_window, bg_color);
+}
+
+void update_gif() {
+  uint32_t next_delay;
+  // Advance to the next APNG frame, and get the delay for this frame
+  if(gbitmap_sequence_update_bitmap_next_frame(s_sequence, s_bitmap, &next_delay)) {
+    // Set the new frame into the BitmapLayer
+    bitmap_layer_set_bitmap(s_bitmap_layer, s_bitmap);
+    layer_mark_dirty(bitmap_layer_get_layer(s_bitmap_layer));
   }
 }
 
-void main_window_update_time(struct tm *tick_time) {
-  static char s_buffer[8];
-  strftime(s_buffer, sizeof(s_buffer), "%H:%M", tick_time);
-  text_layer_set_text(s_time_layer, s_buffer);
-}
+void main_window_update_ui() {
+  if(health_is_available() && s_window) {
+    static char s_value_buffer[8];
 
-void main_window_update_steps(int steps) {
-  if(steps > 0) {
-    static char s_buffer[32];
-    snprintf(s_buffer, sizeof(s_buffer), "%d steps today", steps);
-    text_layer_set_text(s_steps_layer, s_buffer);
+    snprintf(s_value_buffer, sizeof(s_value_buffer), "%d",
+                                              health_get_metric_sum(s_metric));
+
+    switch(s_metric) {
+      case HealthMetricStepCount:
+        set_ui_values("Steps taken today", GColorWindsorTan);
+        break;
+      case HealthMetricActiveSeconds:
+        set_ui_values("Seconds active today", GColorDarkGreen);
+        break;
+      case HealthMetricWalkedDistanceMeters:
+        set_ui_values("Meters travelled today", GColorJazzberryJam);
+        break;
+      case HealthMetricSleepSeconds:
+        set_ui_values("Seconds asleep today", GColorBlueMoon);
+        break;
+      case HealthMetricSleepRestfulSeconds:
+        set_ui_values("Restful sleep today", GColorDukeBlue);
+        break;
+      case HealthMetricRestingKCalories:
+        set_ui_values("Resting kcal today", GColorCadetBlue);
+        break;
+      case HealthMetricActiveKCalories:
+        set_ui_values("Active kcal today", GColorMidnightGreen);
+        break;
+      default:
+        break;
+    }
+
+    text_layer_set_text(s_value_layer, s_value_buffer);
   } else {
-    text_layer_set_text(s_steps_layer, "No steps today.");
+    set_ui_values("Health not available!", GColorDarkCandyAppleRed);
   }
-}
-
-void main_window_set_updated_time(time_t now) {
-  struct tm *time_now = localtime(&now);
-
-  static char s_buffer[32];
-  strftime(s_buffer, sizeof(s_buffer), "Last updated:\n%H:%M", time_now);
-  text_layer_set_text(s_update_layer, s_buffer);
 }

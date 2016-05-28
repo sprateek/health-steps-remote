@@ -37,9 +37,17 @@ function onNewData(data) {
   dateString = dateString.substring(0, dateString.indexOf('G') - 1);
   info(dateString + ' - Got data: ' + data + ' (' + items.length + ' items)');
 
+  var data = {
+    HealthMetricStepCount:items[0],
+    HealthMetricActiveSeconds:items[1],
+    HealthMetricWalkedDistanceMeters:items[2],
+    HealthMetricSleepSeconds:items[3],
+    HealthMetricSleepRestfulSeconds:items[4],
+    HealthMetricRestingKCalories:items[5],
+    HealthMetricActiveKCalories:items[6]};
   // Do stuff with the data
   // Do something here
-  device.publish('topic_2', JSON.stringify({ test_data: 1}));
+  device.publish('topic_2', JSON.stringify(data));
 }
 
 function onRequest(request, response) {
@@ -52,7 +60,7 @@ function onRequest(request, response) {
     var query = url_parts.query;
     var data = query.data;
 
-    onNewData(data);    
+    onNewData(data);
 
     response.end('OK\n');
   } else {
