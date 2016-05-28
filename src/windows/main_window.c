@@ -12,12 +12,12 @@ static BitmapLayer *s_bitmap_layer;
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
   s_metric -= (s_metric > 0) ? 1 : -(MAX_METRICS);
-  main_window_update_ui();
+  main_window_update_time();
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
   s_metric += (s_metric < MAX_METRICS) ? 1 : -(MAX_METRICS);
-  main_window_update_ui();
+  main_window_update_time();
 }
 
 static void click_config_provider(void *context) {
@@ -56,12 +56,11 @@ static void window_load(Window *window) {
   bitmap_layer_set_compositing_mode(s_bitmap_layer, GCompOpSet);
   bitmap_layer_set_bitmap(s_bitmap_layer, s_bitmap);
 
-  s_value_layer = make_text_layer(50, FONT_KEY_GOTHIC_28_BOLD);
-  s_label_layer = make_text_layer(80, FONT_KEY_GOTHIC_24_BOLD);
+  s_value_layer = make_text_layer(100, FONT_KEY_ROBOTO_BOLD_SUBSET_49 );
+  s_label_layer = make_text_layer(90, FONT_KEY_GOTHIC_24_BOLD);
   layer_add_child(window_layer, bitmap_layer_get_layer(s_bitmap_layer));
-//   layer_add_child(window_layer, text_layer_get_layer(s_value_layer));
-//   layer_add_child(window_layer, text_layer_get_layer(s_label_layer));
-
+  layer_add_child(window_layer, text_layer_get_layer(s_value_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_label_layer));
 }
 
 static void window_unload(Window *window) {
@@ -84,12 +83,12 @@ void main_window_push() {
   }
   window_stack_push(s_window, true);
 
-  main_window_update_ui();
+  main_window_update_time();
 }
 
 static void set_ui_values(char *label_text, GColor bg_color) {
   text_layer_set_text(s_label_layer, label_text);
-  window_set_background_color(s_window, bg_color);
+// window_set_background_color(s_window, bg_color);
 }
 
 void update_gif() {
@@ -102,41 +101,11 @@ void update_gif() {
   }
 }
 
-void main_window_update_ui() {
-  if(health_is_available() && s_window) {
-    static char s_value_buffer[8];
-
-    snprintf(s_value_buffer, sizeof(s_value_buffer), "%d",
-                                              health_get_metric_sum(s_metric));
-
-    switch(s_metric) {
-      case HealthMetricStepCount:
-        set_ui_values("Steps taken today", GColorWindsorTan);
-        break;
-      case HealthMetricActiveSeconds:
-        set_ui_values("Seconds active today", GColorDarkGreen);
-        break;
-      case HealthMetricWalkedDistanceMeters:
-        set_ui_values("Meters travelled today", GColorJazzberryJam);
-        break;
-      case HealthMetricSleepSeconds:
-        set_ui_values("Seconds asleep today", GColorBlueMoon);
-        break;
-      case HealthMetricSleepRestfulSeconds:
-        set_ui_values("Restful sleep today", GColorDukeBlue);
-        break;
-      case HealthMetricRestingKCalories:
-        set_ui_values("Resting kcal today", GColorCadetBlue);
-        break;
-      case HealthMetricActiveKCalories:
-        set_ui_values("Active kcal today", GColorMidnightGreen);
-        break;
-      default:
-        break;
-    }
-
-    text_layer_set_text(s_value_layer, s_value_buffer);
-  } else {
-    set_ui_values("Health not available!", GColorDarkCandyAppleRed);
-  }
+void main_window_update_time() {
+  time_t now = time(NULL);
+  struct tm *time_now = localtime(&now);
+  static char s_buffer[32];
+  strftime(s_buffer, sizeof(s_buffer), "%H:%M", time_now);
+  text_layer_set_text(s_value_layer, s_buffer);
+  text_layer_set_text_color(s_value_layer, GColorBlack);
 }
