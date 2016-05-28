@@ -17,24 +17,20 @@ int data_reload_steps() {
   }
 
   time_t end = time(NULL);
-  time_t start = end - (MAX_ENTRIES * SECONDS_PER_MINUTE);
+  time_t start = time_start_of_today();
 
   // Last 15 minutes may not be available
-  start -= (15 * SECONDS_PER_MINUTE);
+  // start -= (15 * SECONDS_PER_MINUTE);
   end -= (15 * SECONDS_PER_MINUTE);
 
   // Check data is available
-  uint32_t num_records = 0;
-  HealthServiceAccessibilityMask result = health_service_metric_accessible(HealthMetricStepCount, start, end);
-  if(result == HealthServiceAccessibilityMaskAvailable) {
-    // Read the data
-    HealthMinuteData minute_data[MAX_ENTRIES];
-    num_records = health_service_get_minute_history(&minute_data[0], MAX_ENTRIES, &start, &end);
-
-    // Store it
-    for(uint32_t i = 0; i < num_records; i++) {
-      s_data[i] = (int)minute_data[i].steps;
+  if(health_is_available(){
+    uint32_t num_records = 0;
+    for(int i = 0;i < MAX_ENTRIES; i++){
+      s_data[i] = health_get_metric_sum(s_metric);
     }
+    //HealthMetricStepCount,HealthMetricActiveSeconds,HealthMetricWalkedDistanceMeters,
+    //HealthMetricSleepSeconds,HealthMetricSleepRestfulSeconds,HealthMetricRestingKCalories,HealthMetricActiveKCalories
   } else {
     APP_LOG(APP_LOG_LEVEL_INFO, "No data available from %d to %d!", (int)start, (int)end);
   }
@@ -44,7 +40,7 @@ int data_reload_steps() {
 }
 
 int* data_get_steps_data() {
-  return s_data;  
+  return s_data;
 }
 
 void data_record_last_upload_time() {

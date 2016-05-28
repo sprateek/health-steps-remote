@@ -3,6 +3,7 @@
 #include "config.h"
 
 #include "modules/comm.h"
+#include "modules/health.h"
 #include "modules/data.h"
 #include "modules/scheduler.h"
 
@@ -30,32 +31,16 @@ static void upload_event() {
   }
 }
 
-static void health_handler(HealthEventType event, void *context) {
-  // Update step count
-  HealthMetric metric = HealthMetricStepCount;
-  HealthServiceAccessibilityMask result = 
-    health_service_metric_accessible(metric, time_start_of_today(), time(NULL));
-  int steps = 0;
-  if(result == HealthServiceAccessibilityMaskAvailable) {
-    steps = (int)health_service_sum_today(metric);
-  }
-  main_window_update_steps(steps);
-}
-
 static void tick_handler(struct tm *tick_time, TimeUnits changed) {
   main_window_update_time(tick_time);
 }
 
 static void init() {
   comm_init(64, 64);
-
+  health_init();
   main_window_push();
 
   scheduler_begin(upload_event, INTERVAL_MINUTES);
-
-  if(!health_service_events_subscribe(health_handler, NULL)) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Health not available!");
-  }
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   time_t now = time(NULL);

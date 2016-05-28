@@ -1,6 +1,6 @@
 var VERSION = "1.0";
 var DEBUG = false;
-var NODE_SERVER_URL = '10.132.31.209:8080';
+var NODE_SERVER_URL = '172.18.3.205:8080';
 
 var lastData = [];
 var numItems = 0;
