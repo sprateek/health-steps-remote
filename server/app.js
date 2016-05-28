@@ -4,6 +4,20 @@ var url = require('url');
 var PORT = 8080;
 var DEBUG = false;
 
+var config = {
+  "host": "AYL9A14ZPVEKQ.iot.ap-southeast-1.amazonaws.com",
+  "port": 8883,
+  "clientId": "encore",
+  "thingName": "encore",
+  "caCert": "root-CA.crt",
+  "clientCert": "174e27046d-certificate.pem.crt",
+  "privateKey": "174e27046d-private.pem.key"
+}
+
+var awsIot = require('aws-iot-device-sdk');
+
+var device = awsIot.device(config);
+
 /********************************** Helpers ***********************************/
 
 function info(content) {
@@ -24,6 +38,8 @@ function onNewData(data) {
   info(dateString + ' - Got data: ' + data + ' (' + items.length + ' items)');
 
   // Do stuff with the data
+  // Do something here
+  device.publish('topic_2', JSON.stringify({ test_data: 1}));
 }
 
 function onRequest(request, response) {
