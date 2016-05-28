@@ -3,7 +3,7 @@
 #include <pebble.h>
 
 // Number of data items to obtain from the HealthService API
-#define MAX_ENTRIES 7
+#define MAX_ENTRIES HealthMetricActiveKCalories
 
 // Number of minutes between uploads, and the number of items read from
 // the HealthService minute data API.
