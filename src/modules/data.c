@@ -24,9 +24,9 @@ int data_reload_steps() {
   end -= (15 * SECONDS_PER_MINUTE);
 
   // Check data is available
-  if(health_is_available(){
-    uint32_t num_records = 0;
+  if(health_is_available()){
     for(int i = 0;i < MAX_ENTRIES; i++){
+      s_metric += (s_metric < MAX_ENTRIES) ? 1 : -(MAX_ENTRIES);
       s_data[i] = health_get_metric_sum(s_metric);
     }
     //HealthMetricStepCount,HealthMetricActiveSeconds,HealthMetricWalkedDistanceMeters,
@@ -35,8 +35,8 @@ int data_reload_steps() {
     APP_LOG(APP_LOG_LEVEL_INFO, "No data available from %d to %d!", (int)start, (int)end);
   }
 
-  APP_LOG(APP_LOG_LEVEL_INFO, "Got %d/%d new entries from the Health API", (int)num_records, MAX_ENTRIES);
-  return (int)num_records;
+  APP_LOG(APP_LOG_LEVEL_INFO, "Got %d new entries from the Health API", MAX_ENTRIES);
+  return MAX_ENTRIES;
 }
 
 int* data_get_steps_data() {

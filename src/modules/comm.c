@@ -47,7 +47,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 
       // Remember the upload time
       data_record_last_upload_time();
-      main_window_set_updated_time(now);
     } else {
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Last update was less than %d minutes ago", (int)INTERVAL_MINUTES);
     }

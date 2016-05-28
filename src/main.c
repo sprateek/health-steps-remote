@@ -23,8 +23,7 @@ static void upload_event() {
     APP_LOG(APP_LOG_LEVEL_INFO, "Beginning upload...");
     comm_begin_upload(num_records);
 
-    time_t now = time(NULL);
-    main_window_set_updated_time(now);
+    main_window_push();
     data_record_last_upload_time();
   } else {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Could not send data, connection unavailable");
@@ -32,7 +31,7 @@ static void upload_event() {
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits changed) {
-  main_window_update_time(tick_time);
+  main_window_push();
 }
 
 static void init() {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <pebble.h>
-
+#include "health.h"
 #include "config.h"
 
 typedef enum {
