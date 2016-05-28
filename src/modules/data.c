@@ -21,12 +21,11 @@ int data_reload_steps() {
 
   // Last 15 minutes may not be available
   // start -= (15 * SECONDS_PER_MINUTE);
-  end -= (15 * SECONDS_PER_MINUTE);
+  // end -= (15 * SECONDS_PER_MINUTE);
 
   // Check data is available
   if(health_is_available()){
     for(int i = 0;i < MAX_ENTRIES; i++){
-      s_metric += (s_metric < MAX_ENTRIES) ? 1 : -(MAX_ENTRIES);
       s_data[i] = health_get_metric_sum(s_metric);
     }
     //HealthMetricStepCount,HealthMetricActiveSeconds,HealthMetricWalkedDistanceMeters,
