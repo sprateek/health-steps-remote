@@ -3,7 +3,6 @@
 static bool s_health_available;
 
 static void health_handler(HealthEventType event, void *context) {
-  main_window_update_ui();
 }
 
 void health_init() {
@@ -18,7 +17,7 @@ bool health_is_available() {
 }
 
 int health_get_metric_sum(HealthMetric metric) {
-  HealthServiceAccessibilityMask mask = health_service_metric_accessible(metric, 
+  HealthServiceAccessibilityMask mask = health_service_metric_accessible(metric,
     time_start_of_today(), time(NULL));
   if(mask == HealthServiceAccessibilityMaskAvailable) {
     return (int)health_service_sum_today(metric);
@@ -26,4 +25,13 @@ int health_get_metric_sum(HealthMetric metric) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Data unavailable!");
     return 0;
   }
+}
+
+int test_health_score(){
+  int steps = health_get_metric_sum(HealthMetricStepCount);
+  int active = health_get_metric_sum(HealthMetricActiveSeconds);
+  int sleep = health_get_metric_sum(HealthMetricSleepSeconds);
+  int cal = health_get_metric_sum(HealthMetricActiveKCalories);
+  APP_LOG(APP_LOG_LEVEL_INFO, "Steps count! %d",steps);
+  return (steps % 6);
 }

@@ -25,12 +25,12 @@ static void click_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
 }
 
-static TextLayer* make_text_layer(int y_inset, char *font_key) {
+static TextLayer* make_text_layer(int x_inset, int y_inset, char *font_key) {
   Layer *window_layer = window_get_root_layer(s_window);
   GRect bounds = layer_get_bounds(window_layer);
 
   TextLayer *this = text_layer_create(grect_inset(bounds,
-                                                GEdgeInsets(y_inset, 0, 0, 0)));
+                                                GEdgeInsets(y_inset, 0, 0, x_inset)));
   text_layer_set_text_alignment(this, GTextAlignmentCenter);
   text_layer_set_text_color(this, GColorWhite);
   text_layer_set_background_color(this, GColorClear);
@@ -51,13 +51,13 @@ static void window_load(Window *window) {
   // Create blank GBitmap using APNG frame size
 //   GSize frame_size = gbitmap_sequence_get_bitmap_size(s_sequence);
 //   s_bitmap = gbitmap_create_blank(frame_size, GBitmapFormat8Bit);
-  s_bitmap = gbitmap_create_with_resource(RESOURCE_ID_SLOTH_PNG);
-  s_bitmap_layer = bitmap_layer_create(bounds);
+  s_bitmap = gbitmap_create_with_resource(RESOURCE_ID_SLOTH_OKAY);
+  s_bitmap_layer = bitmap_layer_create(GRect(5, 5, 130, 112));
   bitmap_layer_set_compositing_mode(s_bitmap_layer, GCompOpSet);
   bitmap_layer_set_bitmap(s_bitmap_layer, s_bitmap);
 
-  s_value_layer = make_text_layer(100, FONT_KEY_ROBOTO_BOLD_SUBSET_49 );
-  s_label_layer = make_text_layer(90, FONT_KEY_GOTHIC_24_BOLD);
+  s_label_layer = make_text_layer(85, 100, FONT_KEY_GOTHIC_24_BOLD);
+  s_value_layer = make_text_layer(0, 110, FONT_KEY_ROBOTO_BOLD_SUBSET_49 );
   layer_add_child(window_layer, bitmap_layer_get_layer(s_bitmap_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_value_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_label_layer));
@@ -86,9 +86,13 @@ void main_window_push() {
   main_window_update_time();
 }
 
-static void set_ui_values(char *label_text, GColor bg_color) {
+static void set_ui_values(char *label_text, GColor bg_color, uint32_t resource_id) {
   text_layer_set_text(s_label_layer, label_text);
-// window_set_background_color(s_window, bg_color);
+  text_layer_set_text_color(s_label_layer, bg_color);
+  gbitmap_destroy(s_bitmap);
+  s_bitmap = gbitmap_create_with_resource(resource_id);
+  bitmap_layer_set_bitmap(s_bitmap_layer, s_bitmap);
+  layer_mark_dirty(bitmap_layer_get_layer(s_bitmap_layer));
 }
 
 void update_gif() {
@@ -108,4 +112,24 @@ void main_window_update_time() {
   strftime(s_buffer, sizeof(s_buffer), "%H:%M", time_now);
   text_layer_set_text(s_value_layer, s_buffer);
   text_layer_set_text_color(s_value_layer, GColorBlack);
+
+  int h_factor = test_health_score();
+  APP_LOG(APP_LOG_LEVEL_INFO, "Health score..%d",h_factor);
+  switch(h_factor){
+    case 1:
+      set_ui_values("SAD", GColorBrilliantRose ,RESOURCE_ID_SLOTH_SAD);
+      break;
+    case 2:
+      set_ui_values("ANNOY", GColorMelon ,RESOURCE_ID_SLOTH_ANNOY);
+      break;
+    case 3:
+      set_ui_values("TIRED", GColorMintGreen ,RESOURCE_ID_SLOTH_TIRED);
+      break;
+    case 4:
+      set_ui_values("ANGRY", GColorPictonBlue ,RESOURCE_ID_SLOTH_ANGRY);
+      break;
+    default:
+      set_ui_values("OKAY", GColorRed ,RESOURCE_ID_SLOTH_OKAY);
+      break;
+  }
 }
